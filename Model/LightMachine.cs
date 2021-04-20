@@ -101,14 +101,31 @@ namespace Model
 
         public void TriggerChange(bool isTimeOut, Light light)
         {
-            _machine.FireAsync(_IsTimeOut, isTimeOut, light);
+            LockTimeOut(_machine, () =>  _machine.Fire(_IsTimeOut, isTimeOut, light));
+           
         }
         /// <summary>
         /// 關閉
         /// </summary>
         public void TriggerDisEnable()
         {
-            _machine.FireAsync(Trigger.DisEnable);
+            LockTimeOut(_machine, () => _machine.Fire(Trigger.DisEnable));
+        }
+
+        private void LockTimeOut(object obj, Action action)
+        {
+            bool overTime = System.Threading.Monitor.TryEnter(obj, 3000);
+            try
+            {
+                action();
+            }
+            finally
+            {
+                if (overTime)
+                {
+                    System.Threading.Monitor.Exit(obj);
+                }
+            }
         }
     }
 }
